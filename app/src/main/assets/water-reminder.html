@@ -1,0 +1,536 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#171b40">
+<title>Little by Little — Water Tracker</title>
+<style>
+:root{--ink:#123f50;--muted:#5d818e;--teal:#087f9b;--mint:#ddf5f8;--line:#d8edf1;--paper:#f1fbfd;--white:#fff;--shadow:0 14px 36px #147e9212}
+:root[data-theme=dark]{--ink:#e2f7fb;--muted:#9bc2cc;--teal:#55c3d4;--mint:#173f4b;--line:#26535d;--paper:#0b202a;--white:#102e39;--shadow:0 14px 36px #0004}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh;padding:16px 14px calc(92px + env(safe-area-inset-bottom))}
+.app{max-width:680px;margin:auto}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:4px 2px 18px}
+.brand{display:flex;align-items:center;gap:10px}.logo{height:42px;width:42px;border-radius:14px;background:var(--teal);display:grid;place-items:center;color:white;font-size:24px}
+.brand h1{font-size:17px;margin:0}.brand small{display:block;color:var(--muted);font-size:11px;margin-top:2px}
+.top-right{display:flex;align-items:center;gap:8px}.date{font-size:11px;color:var(--muted);text-align:right}
+.theme-toggle{border:1px solid var(--line);background:var(--white);color:var(--ink);border-radius:11px;padding:9px 10px;font-size:11px;font-weight:700}
+.page{display:none}.page.active{display:block}
+.card{background:var(--white);border:1px solid var(--line);border-radius:22px;padding:19px;margin:0 0 13px;box-shadow:var(--shadow)}
+.hero{text-align:center;padding:20px 17px 18px;overflow:hidden}
+.eyebrow{text-transform:uppercase;letter-spacing:1.1px;color:var(--teal);font-size:9px;font-weight:800}
+h2{font-size:20px;margin:7px 0 3px;letter-spacing:-.3px}.sub{margin:0;color:var(--muted);font-size:12px}
+.glass{width:164px;height:194px;margin:16px auto 10px;position:relative;display:flex;align-items:flex-end;justify-content:center;filter:drop-shadow(0 8px 13px #167e7819)}
+.glass-shape{position:absolute;inset:0 13px 0;border:4px solid #b8ded5;border-top:0;border-radius:7px 7px 26px 26px;clip-path:polygon(0 0,100% 0,89% 100%,11% 100%);background:#edf8f5;overflow:hidden}
+:root[data-theme=dark] .glass-shape{background:#17312e;border-color:#456861}
+.water{position:absolute;bottom:0;left:0;right:0;height:0;background:linear-gradient(180deg,#83dac5,#40aa9d);transition:height .75s cubic-bezier(.2,.8,.2,1)}
+.water:before{content:"";position:absolute;left:-10%;top:-7px;width:120%;height:15px;border-radius:50%;background:#a8e8d8;animation:wave 2.2s ease-in-out infinite}
+@keyframes wave{0%,100%{transform:translateX(-3%)}50%{transform:translateX(3%)}}
+.glass-mark{position:absolute;right:8px;width:24px;border-top:2px solid #b4d9d2;z-index:2}.glass-mark:after{content:attr(data-label);position:absolute;left:29px;top:-8px;font-size:8px;color:var(--muted);white-space:nowrap}
+.amount{position:relative;z-index:2;font-size:24px;font-weight:800;margin-bottom:21px;color:#155e5b}.amount small{font-size:11px;color:var(--teal)}
+.progress-text{font-size:14px;font-weight:750}.progress-text span{color:var(--teal)}
+.goal-line{font-size:11px;color:var(--muted);margin-top:3px}
+.bar{height:7px;border-radius:20px;background:var(--line);margin:12px 0 4px;overflow:hidden}.bar div{height:100%;width:0;background:linear-gradient(90deg,#63c4ae,#168179);border-radius:20px;transition:width .45s}
+.goal-foot{display:flex;justify-content:space-between;color:var(--muted);font-size:10px}
+.section-title{font-size:14px;margin:0;font-weight:750}.section-top{display:flex;justify-content:space-between;align-items:center}
+.goal-value{font-size:25px;font-weight:800;margin:13px 0 0}.goal-value small{font-size:11px;font-weight:500;color:var(--muted)}
+.btn{border:0;border-radius:12px;padding:12px 14px;background:var(--teal);color:white;font-size:12px;font-weight:750;cursor:pointer}
+.btn.secondary{background:var(--mint);color:var(--teal)}.btn:active{transform:scale(.98)}
+.actions{display:flex;gap:8px;justify-content:center;margin-top:14px;flex-wrap:wrap}
+.edit{color:var(--teal);font-size:11px;font-weight:750;background:none;border:0;cursor:pointer}
+.glass-size-row{display:flex;justify-content:center;align-items:center;gap:7px;margin-top:11px;color:var(--muted);font-size:10px}
+select,input{font:inherit}.settings-input,.select{border:1px solid var(--line);border-radius:10px;padding:9px 10px;color:var(--ink);background:var(--white);font-size:12px;outline-color:#84cabe}
+.glass-size-row select{max-width:155px}
+:root[data-theme=dark] .select,:root[data-theme=dark] .settings-input{background:var(--paper);color:var(--ink)}
+.summary-row{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.summary-row p{margin:4px 0 0;color:var(--muted);font-size:11px;line-height:1.45}
+.link-btn{border:0;background:var(--mint);color:var(--teal);border-radius:10px;padding:10px 12px;font-weight:750;font-size:11px;white-space:nowrap}
+.form-stack{display:grid;gap:13px;margin-top:15px}
+.field{display:grid;gap:5px;color:var(--muted);font-size:11px}
+.field input,.field select{width:100%}
+.reminder-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.wide{grid-column:1/-1}
+.switch-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.switch{position:relative;width:44px;height:25px;flex:0 0 auto}.switch input{opacity:0;width:0;height:0}
+.slider{position:absolute;inset:0;background:#dce7e4;border-radius:20px;cursor:pointer;transition:.2s}
+.slider:before{content:"";position:absolute;width:19px;height:19px;left:3px;top:3px;border-radius:50%;background:white;box-shadow:0 1px 4px #0002;transition:.2s}
+.switch input:checked+.slider{background:var(--teal)}.switch input:checked+.slider:before{transform:translateX(19px)}
+.status{font-size:10px;color:var(--muted);line-height:1.5;margin-top:4px}
+.plan{background:var(--mint);border-radius:14px;padding:13px;margin-top:13px}
+.plan strong{font-size:12px}.plan p{font-size:11px;line-height:1.55;margin:5px 0 0;color:var(--ink)}
+.log-list{display:grid;gap:8px;margin-top:13px}.log-item{display:flex;justify-content:space-between;gap:8px;background:var(--paper);border:1px solid var(--line);border-radius:11px;padding:10px 12px;font-size:11px}
+.empty{font-size:11px;color:var(--muted);margin-top:13px}
+.toast{position:fixed;bottom:calc(82px + env(safe-area-inset-bottom));left:50%;transform:translate(-50%,16px);background:#183b40;color:white;padding:11px 15px;border-radius:12px;font-size:12px;opacity:0;pointer-events:none;transition:.2s;z-index:9;max-width:90%;text-align:center}.toast.show{opacity:1;transform:translate(-50%,0)}
+.modal-back{position:fixed;inset:0;background:#12343566;display:none;place-items:center;padding:16px;z-index:8}.modal-back.open{display:grid}
+.modal{background:var(--white);border:1px solid var(--line);border-radius:19px;padding:20px;width:min(350px,100%);box-shadow:var(--shadow)}
+.modal h3{font-size:16px;margin:0 0 13px}.modal label{display:block;font-size:11px;color:var(--muted);margin-bottom:6px}
+.goal-input{width:100%;border:1px solid var(--line);border-radius:10px;padding:11px;color:var(--ink);background:var(--white);font-size:16px}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}.small-btn{border:0;background:none;color:var(--muted);font-weight:650;padding:10px}
+.bottom-nav{position:fixed;z-index:7;bottom:0;left:0;right:0;padding:8px 10px calc(8px + env(safe-area-inset-bottom));display:flex;justify-content:center;background:var(--white);border-top:1px solid var(--line);backdrop-filter:blur(12px)}
+.nav-inner{width:min(680px,100%);display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.nav-btn{border:0;border-radius:13px;background:transparent;color:var(--muted);padding:8px 4px;font-size:10px;font-weight:700}.nav-btn span{display:block;font-size:17px;margin-bottom:2px}
+.nav-btn.active{background:var(--mint);color:var(--teal)}
+@media(min-width:650px){body{padding-top:24px}.top{margin-bottom:22px}.hero{padding:27px}.glass{width:190px;height:220px}}
+/* Phone readability and touch-target refinements */
+body{font-size:15px;background:radial-gradient(ellipse at 50% -15%,#e3f4ed 0,transparent 46%),var(--paper)}
+:root[data-theme=dark] body{background:radial-gradient(ellipse at 50% -15%,#1d3c36 0,transparent 46%),var(--paper)}
+.brand h1{font-size:19px}.brand small{font-size:12px}.date{font-size:12px}
+.card{border-radius:24px;padding:21px}.hero{padding:23px 18px 20px}
+.eyebrow{font-size:10px}h2{font-size:23px}.sub{font-size:14px}
+.glass{width:176px;height:208px}.amount{font-size:27px}.amount small{font-size:13px}
+.progress-text{font-size:16px}.goal-line{font-size:13px}
+.section-title{font-size:16px}.goal-value{font-size:28px}.goal-value small{font-size:13px}
+.btn{font-size:14px;padding:13px 15px}.edit{font-size:13px}.link-btn{font-size:13px;padding:11px 13px}
+.glass-size-row{font-size:12px}.settings-input,.select{font-size:14px;padding:11px 12px}
+.field{font-size:13px}.status{font-size:12px}.plan{padding:15px}.plan strong{font-size:14px}.plan p{font-size:13px}
+.log-item{font-size:13px;padding:12px}.empty{font-size:13px}
+.nav-btn{font-size:12px;min-height:54px}.nav-btn span{font-size:19px}
+/* Water-inspired colors, ripples, and rounded type */
+body{font-family:"sans-serif-rounded",system-ui,-apple-system,"Segoe UI",sans-serif;background:radial-gradient(ellipse at 50% -12%,#c9f0f4 0,transparent 48%),linear-gradient(180deg,#f1fbfd,var(--paper) 45%)}
+:root[data-theme=dark] body{background:radial-gradient(ellipse at 50% -12%,#164654 0,transparent 48%),linear-gradient(180deg,#0b202a,var(--paper) 48%)}
+.brand h1,h2,h3,.goal-value,.progress-text{font-family:"sans-serif-rounded",system-ui,sans-serif;letter-spacing:-.35px}
+.logo{background:linear-gradient(145deg,#42c6d1,#087f9b);border-radius:16px 16px 16px 5px;box-shadow:0 7px 18px #07809b30}
+.card{border-color:#d1eaf0;box-shadow:0 13px 34px #13819a12}
+:root[data-theme=dark] .card{border-color:var(--line);box-shadow:0 13px 34px #0003}
+.hero{background:linear-gradient(155deg,var(--white) 35%,#e9f9fb 100%)}
+:root[data-theme=dark] .hero{background:linear-gradient(155deg,var(--white) 35%,#123b47 100%)}
+.eyebrow{color:#087f9b}
+:root[data-theme=dark] .eyebrow{color:#70d4df}
+.glass{filter:drop-shadow(0 12px 16px #07809b25)}
+.glass-shape{border-color:#8bd3df;background:linear-gradient(180deg,#f7feff,#e6f8fb)}
+:root[data-theme=dark] .glass-shape{border-color:#4b9ba7;background:#133743}
+.water{background:linear-gradient(180deg,#59d7df,#22a8c4 60%,#1389a7)}
+.water:before{background:#a5f2ed}
+.water:after{content:"";position:absolute;inset:5px 0 0;background:radial-gradient(circle at 24% 80%,#d9ffffaa 0 3px,transparent 4px),radial-gradient(circle at 66% 55%,#e5ffff99 0 2px,transparent 3px),radial-gradient(circle at 83% 90%,#d9ffffaa 0 3px,transparent 4px);animation:bubbles 3s ease-in-out infinite}
+@keyframes bubbles{0%,100%{transform:translateY(4px);opacity:.55}50%{transform:translateY(-5px);opacity:1}}
+.amount{color:#08677d}
+:root[data-theme=dark] .amount{color:#d9f8fb}
+.amount small{color:var(--teal)}
+.bar div{background:linear-gradient(90deg,#67d9d5,#0785a5)}
+.btn{background:linear-gradient(135deg,#19a5b8,#087f9b);box-shadow:0 5px 12px #087f9b24}
+.btn.secondary,.link-btn{background:#e2f6f8;color:#087f9b}
+:root[data-theme=dark] .btn.secondary,:root[data-theme=dark] .link-btn{background:#173f4b;color:#84e0e5}
+.plan{background:linear-gradient(135deg,#e5f8fa,#d9f3f5)}
+:root[data-theme=dark] .plan{background:linear-gradient(135deg,#173f4b,#153743)}
+.nav-btn.active{background:#dff5f8;color:#087f9b}
+:root[data-theme=dark] .nav-btn.active{background:#173f4b;color:#8ce3e6}
+.nav-btn{font-family:"sans-serif-rounded",system-ui,sans-serif}
+.progress-text{font-size:17px}.section-title{font-size:17px}.field{font-size:14px}.status{font-size:13px}
+.undo-btn{display:block;margin:9px auto 0;padding:7px 10px;border:0;border-radius:10px;background:transparent;color:var(--teal);font:700 12px "sans-serif-rounded",system-ui,sans-serif}
+.undo-btn:disabled,.undo-history:disabled{opacity:.42}
+.undo-history{margin-right:8px}
+.goal-motivation{display:none;margin:12px auto 0;max-width:320px;padding:11px 13px;border:1px solid #aee8ed;border-radius:14px;background:linear-gradient(135deg,#e4f9fa,#d9f3f5);color:#08677d;font-size:13px;font-weight:750;line-height:1.45}
+:root[data-theme=dark] .goal-motivation{border-color:#367584;background:linear-gradient(135deg,#173f4b,#153743);color:#bceff0}
+
+/* Ocean water redesign */
+:root {
+  --ink: #123f58;
+  --muted: #527b91;
+  --teal: #0786b4;
+  --mint: #dff8ff;
+  --line: #b9e8f3;
+  --paper: #eafaff;
+  --white: #f7fdff;
+  --shadow: 0 18px 44px rgba(3, 53, 86, .20);
+}
+:root[data-theme="dark"] {
+  --ink: #e8f9ff;
+  --muted: #a8d6e7;
+  --teal: #62d9ef;
+  --mint: #123f5b;
+  --line: #2b6681;
+  --paper: #071d33;
+  --white: #0e3451;
+  --shadow: 0 18px 44px rgba(0, 0, 0, .34);
+}
+body {
+  color: var(--ink);
+  background:
+    radial-gradient(ellipse at 12% 4%, rgba(147, 244, 250, .86), transparent 34%),
+    radial-gradient(ellipse at 95% 27%, rgba(78, 205, 239, .74), transparent 38%),
+    radial-gradient(ellipse at 8% 82%, rgba(26, 138, 199, .5), transparent 40%),
+    linear-gradient(155deg, #40bfdc 0%, #168fca 42%, #08639f 100%);
+  background-attachment: fixed;
+}
+:root[data-theme="dark"] body {
+  background:
+    radial-gradient(ellipse at 12% 4%, rgba(28, 113, 139, .6), transparent 36%),
+    radial-gradient(ellipse at 95% 30%, rgba(16, 84, 132, .5), transparent 40%),
+    linear-gradient(155deg, #0b3c59 0%, #082c4a 52%, #061b34 100%);
+  background-attachment: fixed;
+}
+.top {
+  color: #f3fdff;
+  text-shadow: 0 2px 12px rgba(0, 43, 75, .28);
+}
+.brand small, .date { color: #e0faff; }
+.logo {
+  background: linear-gradient(145deg, #6ce6ee, #0788bd 78%);
+  box-shadow: 0 8px 20px rgba(0, 49, 80, .26), inset 0 1px 0 rgba(255,255,255,.65);
+}
+.logo svg { display:block; width:100%; height:100%; border-radius:inherit; }
+.theme-toggle {
+  color: #08618b;
+  background: rgba(241, 253, 255, .9);
+  border: 1px solid rgba(255,255,255,.76);
+  box-shadow: 0 6px 18px rgba(0,50,80,.15);
+}
+:root[data-theme="dark"] .theme-toggle { color: #dffaff; background: #124765; border-color: #54cde455; }
+.card {
+  background: rgba(246, 253, 255, .91);
+  border: 1px solid rgba(255,255,255,.8);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(16px);
+}
+:root[data-theme="dark"] .card { background: rgba(8, 39, 64, .91); border-color: rgba(100, 217, 239, .27); }
+.hero {
+  background:
+    radial-gradient(ellipse at 100% 0%, rgba(96, 222, 237, .27), transparent 42%),
+    linear-gradient(145deg, rgba(250,255,255,.98), rgba(210,246,252,.94));
+}
+:root[data-theme="dark"] .hero {
+  background:
+    radial-gradient(ellipse at 100% 0%, rgba(56, 186, 206, .2), transparent 45%),
+    linear-gradient(145deg, #103d59, #0a2c49);
+}
+.progress-track, .bar-track { background: rgba(23, 146, 184, .15); }
+.progress-fill, .bar-fill, .water {
+  background: linear-gradient(100deg, #23c8df 0%, #078fc8 54%, #0871b1 100%);
+}
+button, .primary, .add-btn {
+  background: linear-gradient(135deg, #13b4d1, #087bb5);
+  color: #fff;
+  box-shadow: 0 7px 16px rgba(6, 105, 157, .2);
+}
+button.secondary, .secondary, .ghost, .nav-btn {
+  box-shadow: none;
+}
+button.secondary, .secondary, .ghost {
+  color: #08719b;
+  background: #dff7fc;
+  border: 1px solid #b8e8f3;
+}
+:root[data-theme="dark"] button.secondary, :root[data-theme="dark"] .secondary, :root[data-theme="dark"] .ghost {
+  color: #b7f2fa; background: #12445e; border-color: #31728a;
+}
+input, select {
+  background: rgba(255,255,255,.84);
+  border-color: #a9dce9;
+}
+:root[data-theme="dark"] input, :root[data-theme="dark"] select { background: #0a2c47; border-color: #31728a; color: var(--ink); }
+.bottom-nav {
+  left: 50%; right: auto; transform: translateX(-50%);
+  width: min(680px, calc(100% - 26px));
+  bottom: calc(9px + env(safe-area-inset-bottom));
+  border: 1px solid rgba(255,255,255,.82);
+  border-radius: 23px;
+  padding: 8px;
+  background: rgba(245, 253, 255, .94);
+  box-shadow: 0 14px 36px rgba(3, 49, 79, .24);
+  backdrop-filter: blur(18px);
+}
+:root[data-theme="dark"] .bottom-nav { background: rgba(7, 34, 56, .95); border-color: rgba(85, 209, 232, .34); }
+.nav-btn.active { color: #06759e; background: #d5f5fa; }
+:root[data-theme="dark"] .nav-btn.active { color: #9deefa; background: #124a63; }
+
+/* Midnight tide: a full visual refresh */
+:root {
+  --ink: #17224b;
+  --muted: #727b9d;
+  --teal: #087eaa;
+  --mint: #e3f7f4;
+  --line: #e3e4ef;
+  --paper: #171b40;
+  --white: #fffdf7;
+  --shadow: 0 18px 42px rgba(3, 8, 36, .25);
+}
+:root[data-theme="dark"] {
+  --ink: #eff3ff;
+  --muted: #a8b2d4;
+  --teal: #6ce8de;
+  --mint: #213d55;
+  --line: #354866;
+  --paper: #0a1027;
+  --white: #17223c;
+  --shadow: 0 18px 42px rgba(0, 0, 0, .34);
+}
+body {
+  color: var(--ink);
+  background:
+    radial-gradient(ellipse at 4% 10%, rgba(23, 187, 186, .34), transparent 31%),
+    radial-gradient(ellipse at 100% 48%, rgba(111, 91, 205, .34), transparent 38%),
+    radial-gradient(ellipse at 24% 100%, rgba(16, 90, 139, .48), transparent 43%),
+    linear-gradient(158deg, #101532 0%, #20254e 52%, #10294a 100%);
+  background-attachment: fixed;
+  padding-top: max(14px, env(safe-area-inset-top));
+}
+:root[data-theme="dark"] body {
+  background:
+    radial-gradient(ellipse at 4% 10%, rgba(9, 107, 123, .25), transparent 33%),
+    radial-gradient(ellipse at 100% 48%, rgba(68, 49, 139, .23), transparent 39%),
+    linear-gradient(158deg, #070b1c 0%, #11172f 55%, #081c31 100%);
+  background-attachment: fixed;
+}
+.app { max-width: 720px; }
+.top { margin: 5px 3px 20px; }
+.brand h1 { color: #fff; font-size: 21px; letter-spacing: -.55px; }
+.brand small, .date { color: #c1d1f0; }
+.date { font-weight: 650; }
+.logo { border-radius: 15px; box-shadow: 0 8px 24px rgba(35, 202, 225, .28); }
+.theme-toggle {
+  color: #17224b; background: #fafffc; border: 0; border-radius: 14px;
+  padding: 11px 12px; box-shadow: 0 8px 20px rgba(4, 9, 38, .2);
+}
+:root[data-theme="dark"] .theme-toggle { color: #dffaff; background: #263857; }
+.card {
+  border: 1px solid rgba(255,255,255,.62); border-radius: 26px;
+  box-shadow: 0 16px 38px rgba(4, 9, 38, .19);
+}
+:root[data-theme="dark"] .card { border-color: rgba(132, 169, 220, .19); }
+.hero {
+  position: relative; isolation: isolate; overflow: hidden;
+  padding: 23px 18px 21px;
+  color: #fff;
+  border: 1px solid rgba(151, 232, 244, .38);
+  border-radius: 30px 30px 30px 9px;
+  background:
+    radial-gradient(ellipse at 88% 4%, rgba(82, 227, 208, .31), transparent 37%),
+    radial-gradient(ellipse at 0% 92%, rgba(61, 100, 203, .35), transparent 42%),
+    linear-gradient(145deg, #222959 0%, #173b60 100%);
+  box-shadow: 0 22px 48px rgba(3, 9, 37, .34), inset 0 1px rgba(255,255,255,.12);
+}
+:root[data-theme="dark"] .hero {
+  background:
+    radial-gradient(ellipse at 88% 4%, rgba(55, 181, 172, .22), transparent 37%),
+    linear-gradient(145deg, #151e3a, #0f2b43);
+}
+.hero .eyebrow { color: #a0f4dc; letter-spacing: 1.65px; }
+.hero h2 { margin-top: 10px; font-size: clamp(24px, 6vw, 31px); letter-spacing: -.9px; }
+.hero .sub { color: #c7d5f1; }
+.glass { width: 184px; height: 212px; margin-top: 19px; filter: drop-shadow(0 12px 18px rgba(1, 12, 39, .28)); }
+.glass-shape { border-color: rgba(195, 247, 246, .83); background: linear-gradient(180deg, rgba(207,248,245,.1), rgba(153,220,237,.2)); }
+:root[data-theme="dark"] .glass-shape { border-color: #72cdd3; background: rgba(108, 200, 204, .09); }
+.water { background: linear-gradient(180deg, #66ffdc, #17c7cf 55%, #0c8fd1); }
+.water:before { background: #b7ffec; }
+.water:after { background: radial-gradient(circle at 24% 80%,#eaffffbb 0 3px,transparent 4px),radial-gradient(circle at 66% 55%,#e5ffffaa 0 2px,transparent 3px),radial-gradient(circle at 83% 90%,#d9ffffbb 0 3px,transparent 4px); }
+.glass-mark { border-color: rgba(207, 245, 246, .7); }
+.glass-mark:after { color: #ceddf0; }
+.amount, :root[data-theme="dark"] .amount { color: #fff; }
+.amount small { color: #a0f4dc; }
+.progress-text { margin-top: 3px; color: #fff; font-size: 18px; }
+.progress-text span { color: #a0f4dc; }
+.goal-line { color: #c4d7ef; font-size: 14px; }
+.goal-line b { color: #fff; }
+.goal-motivation { color: #162349; background: #d8fff0; border-color: #a3f2d3; }
+:root[data-theme="dark"] .goal-motivation { color: #eafff8; background: #183f47; border-color: #367c7d; }
+.btn { border-radius: 15px; background: linear-gradient(135deg, #caff62, #89e9a0); color: #172447; box-shadow: 0 9px 20px rgba(157, 242, 132, .2); }
+.btn.secondary { color: #fff; background: rgba(255,255,255,.09); border: 1px solid rgba(221,244,255,.37); }
+.hero .undo-btn { color: #d2e4f4; }
+.hero .glass-size-row { color: #bdcce7; }
+.hero .settings-input { color: #fff; background: rgba(255,255,255,.1); border-color: rgba(213,239,255,.38); }
+.card:not(.hero) { background: #fffdf7; border-color: rgba(255,255,255,.74); }
+:root[data-theme="dark"] .card:not(.hero) { background: #17223c; border-color: rgba(132,169,220,.19); }
+.section-title { font-size: 17px; letter-spacing: -.25px; }
+.goal-value { color: #17224b; }
+:root[data-theme="dark"] .goal-value { color: #eff3ff; }
+.bar { height: 9px; background: #e5e6ef; }
+:root[data-theme="dark"] .bar { background: #2a3a55; }
+.bar div { background: linear-gradient(90deg, #11baca, #92e66f); }
+.link-btn { color: #075c7d; background: #e5f7f1; border-radius: 12px; }
+:root[data-theme="dark"] .link-btn { color: #baf8ed; background: #214357; }
+.plan { color: #173351; background: linear-gradient(130deg, #e5f9f4, #edf1ff); border: 1px solid #e3e9f0; }
+:root[data-theme="dark"] .plan { color: var(--ink); background: linear-gradient(130deg, #173d48, #252f50); border-color: var(--line); }
+.settings-input, .select, .goal-input { border-radius: 12px; }
+.log-item { border-radius: 14px; background: #f4f5fb; border-color: #e6e7ef; }
+:root[data-theme="dark"] .log-item { background: #101a32; border-color: #2e405e; }
+.bottom-nav {
+  left: 50%; right: auto; transform: translateX(-50%);
+  width: min(700px, calc(100% - 26px));
+  bottom: calc(9px + env(safe-area-inset-bottom)); padding: 8px;
+  border: 1px solid rgba(255,255,255,.72); border-radius: 21px;
+  background: rgba(255,253,247,.96); box-shadow: 0 15px 36px rgba(2,8,36,.3);
+}
+:root[data-theme="dark"] .bottom-nav { background: rgba(20,31,54,.97); border-color: rgba(132,169,220,.22); }
+.nav-btn { border-radius: 15px; color: #727b9d; }
+.nav-btn.active { color: #18304f; background: linear-gradient(135deg, #d6fff0, #e7f3ff); }
+:root[data-theme="dark"] .nav-btn.active { color: #aaf4e6; background: #214354; }
+.toast { background: #101833; box-shadow: 0 10px 28px rgba(0,0,0,.28); }
+.modal-back { background: rgba(6,10,32,.72); backdrop-filter: blur(5px); }
+.modal { border-radius: 23px; }
+</style>
+</head>
+<body>
+<main class="app">
+  <header class="top">
+    <div class="brand"><div class="logo" aria-label="Water Tracker logo"><svg viewBox="0 0 108 108" role="img" aria-hidden="true"><defs><linearGradient id="logoBlue" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#42b9ed"/><stop offset="1" stop-color="#2587d5"/></linearGradient><linearGradient id="logoDrop" x1=".25" y1="0" x2=".75" y2="1"><stop stop-color="#a6f4ff"/><stop offset="1" stop-color="#40c8ee"/></linearGradient></defs><rect width="108" height="108" rx="22" fill="url(#logoBlue)"/><path d="M54 14C45 30 29 46 29 62c0 16 11 29 25 29 15 0 25-13 25-29 0-16-16-32-25-48Z" fill="url(#logoDrop)"/><path d="M34 58c13-4 26 4 38 2 3-1 5-2 6-3 1 18-10 31-24 31-13 0-23-11-23-24 0-2 1-4 3-6Z" fill="#2789d0"/><g fill="#59cfee"><rect x="40" y="64" width="13" height="4" rx="2"/><rect x="44" y="72" width="14" height="4" rx="2"/><rect x="49" y="80" width="11" height="4" rx="2"/></g></svg></div><div><h1>Water Tracker</h1><small>Made by Anand K</small></div></div>
+    <div class="top-right"><div class="date" id="date"></div><button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">🌙</button></div>
+  </header>
+
+  <section class="page active" id="page-home">
+    <article class="card hero">
+      <div class="eyebrow">A little hydration goes a long way</div>
+      <h2>How are you doing today?</h2><p class="sub">Every sip counts. Keep it easy.</p>
+      <div class="glass" aria-label="Daily water progress">
+        <div class="glass-shape"><div class="water" id="water"></div></div>
+        <div class="glass-mark" id="mark25"></div><div class="glass-mark" id="mark50"></div><div class="glass-mark" id="mark75"></div>
+        <div class="amount"><b id="amount">0</b><small> ml</small></div>
+      </div>
+      <div class="progress-text"><span id="percent">0%</span> of your daily goal</div>
+      <div class="goal-line"><b id="left">2,000 ml</b> to go</div><div class="goal-motivation" id="goalMotivation" role="status" aria-live="polite"></div>
+      <div class="actions"><button class="btn" id="addGlass">＋ Add suggested amount</button><button class="btn secondary" id="otherAmount">＋ Other amount</button></div>
+      <button class="undo-btn" id="undoHome" disabled>↶ Undo last drink</button>
+      <div class="glass-size-row"><label for="glassSize">Customize glass capacity</label><input class="settings-input" id="glassSize" type="number" min="200" max="2000" step="10" value="200" aria-label="Glass capacity in ml" style="width:92px"><span>ml</span></div>
+    </article>
+    <article class="card">
+      <div class="section-top"><h3 class="section-title">Daily goal</h3><button class="edit" id="editGoal">Edit goal</button></div>
+      <div class="goal-value"><span id="goal">2,000</span> <small>ml / day</small></div>
+      <div class="bar"><div id="bar"></div></div><div class="goal-foot"><span>Today</span><span id="goalFoot">0 of 2,000 ml</span></div>
+    </article>
+    <article class="card summary-row"><div><h3 class="section-title">Your reminders</h3><p id="reminderSummary">Every hour · 8:00 AM–9:00 PM · Paused</p></div><button class="link-btn" id="reminderHomeButton" data-go="reminders">Edit →</button></article>
+  </section>
+
+  <section class="page" id="page-reminders">
+    <article class="card">
+      <div class="switch-row"><div><h2 style="font-size:18px;margin:0">Custom reminders</h2><div class="status" id="reminderStatus">Choose when and how you’d like a nudge.</div></div><label class="switch"><input id="reminderToggle" type="checkbox"><span class="slider"></span></label></div>
+      <div class="form-stack">
+        <label class="field">Remind me every<select class="select" id="interval"><option value="15">15 minutes</option><option value="30">30 minutes</option><option value="45">45 minutes</option><option value="60">1 hour</option><option value="90">1.5 hours</option><option value="120">2 hours</option><option value="custom">Custom interval</option></select></label>
+        <label class="field" id="customIntervalField" style="display:none">Custom interval in minutes<input class="settings-input" id="customInterval" type="number" min="15" max="720" step="5" value="30"></label>
+        <div class="reminder-fields">
+          <label class="field">Start time<input class="settings-input" id="startTime" type="time" value="08:00"></label>
+          <label class="field">End time<input class="settings-input" id="endTime" type="time" value="21:00"></label>
+        </div>
+        <label class="field">Message style<select class="select" id="messageMode"><option value="surprise">Surprise me — funny &amp; encouraging</option><option value="funny">Funny</option><option value="encouraging">Encouraging</option><option value="custom">My own message</option></select></label>
+        <label class="field" id="customMessageField" style="display:none">Your message<input class="settings-input" id="customMessage" type="text" maxlength="100" value="Time for a little drink of water? 💧"></label>
+      </div>
+      <div class="plan"><strong>Your gentle drinking plan</strong><p id="planText"></p></div>
+      <div class="status" id="reminderNote"></div>
+    </article>
+  </section>
+
+  <section class="page" id="page-history">
+    <article class="card">
+      <div class="section-top"><h2 style="font-size:18px;margin:0">Today’s sips</h2><div><button class="edit undo-history" id="undoHistory" disabled>Undo latest</button><button class="edit" id="reset">Reset today</button></div></div>
+      <div class="log-list" id="logs"></div>
+    </article>
+  </section>
+</main>
+<nav class="bottom-nav" aria-label="Main navigation"><div class="nav-inner">
+  <button class="nav-btn active" data-page="home"><span>⌂</span>Home</button>
+  <button class="nav-btn" data-page="reminders"><span>◷</span>Reminders</button>
+  <button class="nav-btn" data-page="history"><span>☷</span>Today's sips</button>
+</div></nav>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<div id="modalBack" class="modal-back"><div class="modal"><h3 id="modalTitle">Set your daily goal</h3><label id="fieldLabel" for="modalInput">Daily goal in ml</label><input class="goal-input" id="modalInput" type="number" min="200" max="10000" step="50" value="2000"><div class="modal-actions"><button class="small-btn" id="cancel">Cancel</button><button class="btn" id="save">Save</button></div></div></div>
+<script>
+const $=id=>document.getElementById(id);
+const todayKey=()=>new Date().toLocaleDateString('en-CA');
+let stored=null;try{stored=JSON.parse(localStorage.getItem('littleByLittle')||'null')}catch(_){}
+const today=todayKey();
+const savedGlassSize=stored?.glassSize;
+const initialGlassSize=savedGlassSize==='custom'?Number(stored?.customGlassSize)||200:(Number(savedGlassSize)===250?200:Number(savedGlassSize)||200);
+let state={...(stored||{}),date:today,goal:Number(stored?.goal)||2000,total:stored?.date===today?(Number(stored.total)||0):0,logs:stored?.date===today?(stored.logs||[]):[],reminders:!!stored?.reminders,interval:stored?.interval??60,customInterval:Number(stored?.customInterval)||30,startTime:stored?.startTime||'08:00',endTime:stored?.endTime||'21:00',messageMode:stored?.messageMode||'surprise',customMessage:stored?.customMessage||'Time for a little drink of water? 💧',glassSize:initialGlassSize,darkMode:!!stored?.darkMode};
+let toastTimer;
+function save(fromDrink){localStorage.setItem('littleByLittle',JSON.stringify(state));render();syncNativeProgress(!!fromDrink)}
+function toast(message){$('toast').textContent=message;$('toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),2100)}
+function selectedGlassSize(){return Number(state.glassSize)||200}
+function pretty(n){return Number(n).toLocaleString()}
+function displayTime(value){const parts=value.split(':').map(Number),date=new Date();date.setHours(parts[0],parts[1],0,0);return date.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'})}
+function displayInterval(){const minutes=reminderMinutes();return minutes%60===0?(minutes/60)+' '+(minutes===60?'hour':'hours'):minutes+' min'}
+function messageForNotification(){
+  if(state.messageMode==='custom')return state.customMessage;
+  return state.messageMode==='funny'?'@tone:funny':state.messageMode==='encouraging'?'@tone:encouraging':'@tone:surprise';
+}
+function reminderMinutes(){return state.interval==='custom'?Number(state.customInterval):Number(state.interval)}
+function recommendedAmount(){return Math.max(1,Math.round(state.goal/reminderCount()))}
+function reminderCount(){
+  const parse=t=>{const p=t.split(':').map(Number);return p[0]*60+p[1]};
+  let span=(parse(state.endTime)-parse(state.startTime)+1440)%1440;if(span===0)span=1440;
+  return Math.max(1,Math.ceil(span/Math.max(15,reminderMinutes())));
+}
+function updatePlan(){
+  const count=reminderCount(),per=recommendedAmount(),size=selectedGlassSize(),glasses=per/size,totalGlasses=Math.ceil(state.goal/size);
+  const glassText=glasses<0.1?'a small sip':(glasses.toFixed(1).replace(/\.0$/,'')+' of your '+pretty(size)+' ml glass'+(Math.abs(glasses-1)<0.05?'':'es'));
+  $('planText').textContent='Your goal is '+pretty(state.goal)+' ml across about '+count+' reminders in your chosen hours. Aim for roughly '+pretty(per)+' ml ('+glassText+') each time — about '+totalGlasses+' glasses over the day.';
+}
+function syncNativeReminder(){
+  if(window.AndroidReminder)AndroidReminder.setReminder(state.reminders,reminderMinutes(),state.startTime,state.endTime,messageForNotification());
+}
+function syncNativeProgress(fromDrink){
+  if(window.AndroidReminder)AndroidReminder.updateProgress(state.total,state.goal,selectedGlassSize(),!!fromDrink);
+}
+function render(){
+  const pct=state.goal>0?Math.min(100,Math.round(state.total/state.goal*100)):0;
+  document.documentElement.dataset.theme=state.darkMode?'dark':'light';
+  $('themeToggle').textContent=state.darkMode?'☀️':'🌙';
+  $('themeToggle').setAttribute('aria-label',state.darkMode?'Use light theme':'Use dark theme');
+  $('date').textContent=new Date().toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
+  $('amount').textContent=pretty(state.total);$('goal').textContent=pretty(state.goal);$('percent').textContent=pct+'%';
+  $('left').textContent=pretty(Math.max(0,state.goal-state.total))+' ml';$('bar').style.width=pct+'%';
+  $('water').style.height=Math.min(100,(state.total/state.goal)*100)+'%';
+  const motivation=$('goalMotivation');
+  if(state.total>=state.goal){motivation.textContent='Goal reached! You did it, hydration hero! 🎉';motivation.style.display='block'}
+  else if(state.total>=Math.ceil(state.goal*0.9)){motivation.textContent='So close! Just '+pretty(state.goal-state.total)+' ml to reach your goal. One little sip at a time! 💧';motivation.style.display='block'}
+  else{motivation.textContent='';motivation.style.display='none'}
+  $('goalFoot').textContent=pretty(state.total)+' of '+pretty(state.goal)+' ml';
+  [25,50,75].forEach((v,i)=>{const mark=$(['mark25','mark50','mark75'][i]);mark.style.bottom=(22+v*1.35)+'px';mark.dataset.label=pretty(Math.round(state.goal*v/100))+' ml'});
+  $('addGlass').textContent='＋ Add '+pretty(recommendedAmount())+' ml';
+  $('glassSize').value=state.glassSize;
+  $('reminderToggle').checked=state.reminders;$('interval').value=state.interval;$('customInterval').value=state.customInterval;
+  $('customIntervalField').style.display=state.interval==='custom'?'grid':'none';
+  $('startTime').value=state.startTime;$('endTime').value=state.endTime;
+  $('messageMode').value=state.messageMode;$('customMessage').value=state.customMessage;
+  $('customMessageField').style.display=state.messageMode==='custom'?'grid':'none';
+  $('reminderStatus').textContent=state.reminders?'On · '+state.startTime+' to '+state.endTime:'Choose when and how you’d like a nudge.';
+  $('reminderSummary').textContent=displayInterval()+' · '+displayTime(state.startTime)+'–'+displayTime(state.endTime)+' · '+(state.reminders?'On':'Paused');
+  $('reminderHomeButton').textContent=state.reminders?'Edit →':'Set up →';
+  $('reminderNote').textContent=window.AndroidReminder?'Android reminders can arrive when the app is closed. Allow notifications and alarms in phone settings.':'For background reminders, install this app on your Android phone.';
+  const latest=state.logs.length?state.logs[state.logs.length-1]:null;
+  $('undoHome').textContent=latest?'↶ Undo last drink · '+pretty(latest.ml)+' ml':'↶ Undo last drink';
+  $('undoHome').disabled=!latest;$('undoHistory').disabled=!latest;
+  updatePlan();
+  const logs=$('logs');logs.innerHTML='';
+  if(!state.logs.length){logs.innerHTML='<div class="empty">Your first sip is waiting 🌿</div>';return}
+  state.logs.slice().reverse().forEach(item=>{const row=document.createElement('div');row.className='log-item';const amount=document.createElement('span');amount.textContent='💧 '+pretty(item.ml)+' ml';const time=document.createElement('span');time.textContent=item.time;row.append(amount,time);logs.appendChild(row)});
+}
+function addWater(ml){
+  state.total+=ml;state.logs.push({ml:ml,time:new Date().toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'})});save(true);
+}
+function undoLastDrink(){
+  if(!state.logs.length)return;
+  const latest=state.logs.pop();state.total=Math.max(0,state.total-Number(latest.ml||0));save();
+}
+window.addWaterFromNative=function(ml){const amount=Math.max(1,Math.round(Number(ml)||selectedGlassSize()));addWater(amount);return true};
+function showPage(name){
+  document.querySelectorAll('.page').forEach(page=>page.classList.toggle('active',page.id==='page-'+name));
+  document.querySelectorAll('.nav-btn').forEach(button=>button.classList.toggle('active',button.dataset.page===name));
+  window.scrollTo(0,0);
+}
+document.querySelectorAll('.nav-btn').forEach(button=>button.onclick=()=>showPage(button.dataset.page));
+document.querySelectorAll('[data-go]').forEach(button=>button.onclick=()=>showPage(button.dataset.go));
+$('themeToggle').onclick=()=>{state.darkMode=!state.darkMode;save()};
+$('addGlass').onclick=()=>addWater(recommendedAmount());
+$('undoHome').onclick=undoLastDrink;$('undoHistory').onclick=undoLastDrink;
+$('glassSize').onchange=e=>{const amount=Math.round(Number(e.target.value));if(!amount||amount<200||amount>2000){toast('Choose a glass size from 200 to 2,000 ml');e.target.value=state.glassSize;return}state.glassSize=amount;save()};
+$('otherAmount').onclick=()=>openModal('drink');
+$('editGoal').onclick=()=>openModal('goal');
+let modalMode='goal';
+function openModal(mode){modalMode=mode;$('modalTitle').textContent=mode==='goal'?'Set your daily goal':'Log another drink';$('fieldLabel').textContent=mode==='goal'?'Daily goal in ml':'Amount in ml';$('modalInput').min=mode==='goal'?'200':'1';$('modalInput').value=mode==='goal'?state.goal:350;$('modalBack').classList.add('open');$('modalInput').focus()}
+$('cancel').onclick=()=>$('modalBack').classList.remove('open');
+$('modalBack').onclick=e=>{if(e.target===$('modalBack'))$('modalBack').classList.remove('open')};
+$('save').onclick=()=>{const value=Math.round(Number($('modalInput').value));const min=modalMode==='goal'?200:1;if(!value||value<min||value>10000){toast('Enter an amount from '+min+' to 10,000 ml');return}$('modalBack').classList.remove('open');if(modalMode==='goal'){state.goal=value;save();toast('Daily goal updated')}else addWater(value)};
+$('reset').onclick=()=>{if(!state.total)return;state.total=0;state.logs=[];save()};
+$('interval').onchange=e=>{state.interval=e.target.value;save();syncNativeReminder()};
+$('customInterval').onchange=e=>{const value=Math.round(Number(e.target.value));if(!value||value<15||value>720){toast('Choose an interval from 15 to 720 minutes');e.target.value=state.customInterval;return}state.customInterval=value;save();syncNativeReminder()};
+['startTime','endTime'].forEach(id=>$(id).onchange=e=>{state[id]=e.target.value||'08:00';save();syncNativeReminder()});
+$('messageMode').onchange=e=>{state.messageMode=e.target.value;save();syncNativeReminder()};
+$('customMessage').onchange=e=>{state.customMessage=e.target.value.trim()||'Time for a little drink of water? 💧';save();syncNativeReminder()};
+$('reminderToggle').onchange=async e=>{
+  if(e.target.checked&&!window.AndroidReminder&&'Notification'in window){let permission=Notification.permission;if(permission==='default')permission=await Notification.requestPermission();if(permission!=='granted'){e.target.checked=false;toast('Allow notifications to receive reminders');return}}
+  state.reminders=e.target.checked;save();syncNativeReminder();
+  if(state.reminders&&window.AndroidReminder)toast('Reminders are on');else if(!state.reminders)toast('Reminders are off');
+};
+render();syncNativeReminder();syncNativeProgress(false);
+</script>
+</body>
+</html>
